@@ -152,21 +152,21 @@ A = np.array([[7., .3, .2, .5],
                [.5, .3, .2, 6]])
 target_mean = np.array([3, -1, -2, 6])
 
-test_size = 200
-test_set = np.empty((test_size, 4))
-test_set2 = np.empty((test_size, 4))
-for x in range(test_size):
-    test_set[x] = SSOR_sampler(A, mean=target_mean)
-    #test_set2[x] = cheby_acc_SSOR_sampler(A, mean=target_mean, d_min=0.251928, d_max=1)
-    test_set2[x] = cheby_acc_SSOR_sampler(A, mean=target_mean)
+#test_size = 200
+#test_set = np.empty((test_size, 4))
+#test_set2 = np.empty((test_size, 4))
+#for x in range(test_size):
+#    test_set[x] = SSOR_sampler(A, mean=target_mean)
+#    #test_set2[x] = cheby_acc_SSOR_sampler(A, mean=target_mean, d_min=0.251928, d_max=1)
+#    test_set2[x] = cheby_acc_SSOR_sampler(A, mean=target_mean)
 
 #print(findMA(A))
-print(np.mean(test_set, axis=0))
-cov = np.cov(np.transpose(test_set))
-precision = sp.inv(cov)
-print(precision)
-print()
-print(np.mean(test_set2, axis=0))
-cov2 = np.cov(np.transpose(test_set2))
-precision2 = sp.inv(cov2)
-print(precision2)
+#print(np.mean(test_set, axis=0))
+#cov = np.cov(np.transpose(test_set))
+#precision = sp.inv(cov)
+#print(precision)
+#print()
+#print(np.mean(test_set2, axis=0))
+#cov2 = np.cov(np.transpose(test_set2))
+#precision2 = sp.inv(cov2)
+#print(precision2)

@@ -4,6 +4,8 @@ import scipy.stats
 import matplotlib.pyplot as ppt
 import gauss_seidel as gs
 import math
+from scipy.sparse.linalg import LinearOperator
+import scipy.sparse.linalg as sl
 
 A = np.array([[13.2, 1.9], 
               [1.9, 2.1]])
@@ -152,6 +154,80 @@ def SSOR_gibbs_convergence_KL_div(A, mean=None, y0=None, w=1, k_max=300, test_si
             print(test_pre)
     return test_set+mean
 
+def cheby_acc_gibbs_convergence(A, d_max = None, d_min = None, mean=None, y0=None, w=1, k_max=300, test_size=300, print_cov = False):
+    n = np.shape(A)[0]
+    d = np.diag(A)
+    D = (2/w-1)*d
+    M = (1/w)*np.diag(d) + np.tril(A, -1)
+    N = ((1-w)/w)*np.diag(d) - np.triu(A, 1)
+    y_prev = np.empty((test_size, n))
+    exp_cov = sp.inv(A)
+    test_set = np.empty((test_size, n))
+    for i in range(test_size):
+        if y0 is None:
+            test_set[i] = np.zeros(n)
+        else:
+            test_set[i] = y0
+    if mean is None:
+        mean = np.zeros(n)
+    else:
+        mean = A@mean
+    def app_MA(v):
+        v1 = np.diag(d) @ sp.solve_triangular(M, A @ v)
+        return sp.solve_triangular(np.transpose(M), v1)
+    B = LinearOperator((n, n), app_MA)
+    if d_max is None:
+        max_vals, _ = sl.eigsh(B, k=1, which='LM')
+        d_max = max_vals[0]
+        print(d_max)
+    if d_min is None:
+        min_vals, _ = sl.eigsh(B, k=1, sigma=0, which='LM')
+        d_min = min_vals[0]
+        print(d_min)
+    delta = math.pow(((d_max-d_min)/4), 2)
+    tau = 2/(d_max+d_min)
+
+    beta = tau
+    alpha = 1
+    b = 2/alpha-1
+    a = (2/tau-1)*b
+    k = tau
+    z = np.empty(n)
+    for i in range(k_max):
+        for index in range(test_size):
+            for m in range(n):
+                z[m] = np.random.normal(0, b*D[m])
+            x = test_set[index] + sp.solve_triangular(M, z - A@test_set[index], lower=True)
+            for m in range(n):
+                z[m] = np.random.normal(0, a*D[m])
+            vv = x - test_set[index] + sp.solve_triangular(np.transpose(M), z - A@x, lower=False)
+
+            if i==0:
+                y_prev[index] = test_set[index]
+                test_set[index] = alpha*(test_set[index] + tau*vv)
+            else:
+                temp = np.copy(test_set[index])
+                test_set[index] = y_prev[index] + alpha*(test_set[index] - y_prev[index] + tau*vv)
+                y_prev[index] = temp
+
+
+
+        beta = 1/(1/tau - beta*delta)
+        alpha = beta/tau
+        b = 2*k*(1-alpha)/beta + 1
+        a = (2/tau-1) + (b-1)*(1/tau+1/k-1)
+        k = beta + (1-alpha)*k
+        test_cov = np.cov(np.transpose(test_set))
+        test_mean = np.mean(test_set, axis=0)
+        mean_error = sp.norm(test_mean, 2)
+        pre_error = sp.norm(test_cov - exp_cov, 2)
+        print(f"Iteration {i+1}: Mean error {mean_error}, Covariance error {pre_error}")
+        if(print_cov):
+            print(test_cov)
+
+    return test_set
+
 ppt.figure(1)
-SSOR_gibbs_convergence(A, target_mean, k_max = 300, test_size=600)
-ppt.show()
+SSOR_gibbs_convergence(A, k_max = 300, test_size = 400)
+cheby_acc_gibbs_convergence(A, d_max=1, mean=target_mean, k_max = 400, test_size=600)
+#ppt.show()
